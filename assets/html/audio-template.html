@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>{{.Chapter.Title}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="m-8">
+    <a
+      href='./{{printf "%v" .Chapter.Title}}-node.html'
+      class="text-blue-800 underline"
+      >回上一頁</a
+    >
+
+    {{if eq .AudioType 0}}
+    <audio controls class="m-2">
+      <source src="{{.Chapter.Raw}}.mp3" type="audio/mpeg" />
+    </audio>
+    {{end}} {{if eq .AudioType 1}}
+    <audio controls class="m-2">
+      <source src="{{.Chapter.Translation}}.mp3" type="audio/mpeg" />
+    </audio>
+    {{end}} {{if eq .AudioType 2}}
+    <audio controls class="m-2">
+      <source src="{{.Chapter.Recording}}.mp3" type="audio/mpeg" />
+    </audio>
+    {{end}} {{if eq .AudioType 3}}
+    <audio controls class="m-2">
+      <source src="{{.Chapter.Navigation}}.mp3" type="audio/mpeg" />
+    </audio>
+    {{end}}
+  </body>
+</html>

@@ -1,0 +1,5 @@
+*.mp3
+*.zip
+dist/*.html
+debug/*.json
+
