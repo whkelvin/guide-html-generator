@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"errors"
 	. "html_generator/pkg/constant"
 	. "html_generator/pkg/parser/models"
+	"os"
 )
 
 func Parse() (*Chapter, error) {
@@ -25,6 +27,30 @@ func constructChapterFromTree(tree Tree) (*Chapter, error) {
 		input, err := readUserGeneratedModelFromJson(filename)
 		if err != nil {
 			return nil, err
+		}
+
+		if _, err := os.Stat(AssetsNavigationMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
+			input.Navigation = false
+		} else {
+			input.Navigation = true
+		}
+
+		if _, err := os.Stat(AssetsRawMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
+			input.Raw = false
+		} else {
+			input.Raw = true
+		}
+
+		if _, err := os.Stat(AssetsRecordingMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
+			input.Recording = false
+		} else {
+			input.Recording = true
+		}
+
+		if _, err := os.Stat(AssetsTranslationMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
+			input.Translation = false
+		} else {
+			input.Translation = true
 		}
 
 		var navigationFilepath = ""
