@@ -1,46 +1,37 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>{{.Chapter.Title}}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="m-8">
-    {{if ne .ParentTitle "index"}} {{if ne .ParentTitle ""}}
-    <a
-      href='./{{printf "%v" .ParentTitle}}-nav.html'
-      class="text-blue-800 underline"
-      >回上一頁</a
-    >
-    {{else}}
-    <a href="./index.html" class="text-blue-800 underline">回上一頁</a>
-    {{end}} {{end}}
 
-    <ul>
-      {{range $element := .Chapter.Children}} {{if (eq (len $element.Children)
-      0)}}
-      <li class="m-2">
-        <a
-          href='./{{printf "%v" .Title}}-node.html'
-          class="text-blue-800 underline"
-          id="node-1-1"
-        >
-          {{$element.Title}}
-        </a>
-      </li>
-      {{else}}
-      <li class="m-2">
-        <a
-          href='./{{printf "%v" .Title}}-nav.html'
-          class="text-blue-800 underline"
-          id="node-1-1"
-        >
-          {{$element.Title}}
-        </a>
-      </li>
-      {{end}} {{end}}
-    </ul>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>{{.Chapter.Title}}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="m-8">
+  {{if ne .ParentTitle "index"}} {{if ne .ParentTitle ""}}
+  <a href='./{{printf "%v" .ParentTitle}}-nav.html' class="text-blue-800">回上一頁</a>
+  {{else}}
+  <a href="./index.html" class="text-blue-800">回上一頁</a>
+  {{end}} {{end}}
+
+  <ul>
+    {{range $element := .Chapter.Children}} {{if (eq (len $element.Children)
+    0)}}
+    <li class="m-2">
+      <a href='./{{printf "%v" .Title}}-node.html' class="text-blue-800" id="node-1-1">
+        <pre>{{$element.Title}}</pre>
+      </a>
+    </li>
+    {{else}}
+    <li class="m-2">
+      <a href='./{{printf "%v" .Title}}-nav.html' class="text-blue-800" id="node-1-1">
+        {{$element.Title}}
+      </a>
+    </li>
+    {{end}} {{end}}
+  </ul>
+</body>
+
 </html>

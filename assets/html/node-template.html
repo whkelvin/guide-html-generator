@@ -9,11 +9,11 @@
   </head>
   <body class="m-8">
     {{if ne .ParentTitle ""}} {{if eq .ParentTitle "index"}}
-    <a href="./index.html" class="text-blue-800 underline">回上一頁</a>
+    <a href="./index.html" class="text-blue-800 ">回上一頁</a>
     {{else}}
     <a
       href='./{{printf "%v" .ParentTitle}}-nav.html'
-      class="text-blue-800 underline"
+      class="text-blue-800 "
       >回上一頁</a
     >
 
@@ -23,25 +23,25 @@
       {{if ne .Raw ""}}
       <a
         href='./{{printf "%v" .Chapter.Title}}-raw-audio.html'
-        class="text-blue-800 underline mt-8"
+        class="text-blue-800 mt-8"
         >原文</a
       >
       {{end}} {{if ne .Recording ""}}
       <a
         href='./{{printf "%v" .Chapter.Title}}-recording-audio.html'
-        class="text-blue-800 underline mt-8"
+        class="text-blue-800 mt-8"
         >師父音檔</a
       >
       {{end}} {{if ne .Translation ""}}
       <a
         href='./{{printf "%v" .Chapter.Title}}-translation-audio.html'
-        class="text-blue-800 underline mt-8"
+        class="text-blue-800 mt-8"
         >語譯</a
       >
       {{end}} {{if ne .Navigation ""}}
       <a
         href='./{{printf "%v" .Chapter.Title}}-navigation-audio.html'
-        class="text-blue-800 underline mt-8"
+        class="text-blue-800 mt-8"
         >上下層科判</a
       >
       {{end}}
