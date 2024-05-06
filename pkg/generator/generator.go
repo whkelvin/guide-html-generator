@@ -1,10 +1,12 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	. "html_generator/pkg/constant"
 	. "html_generator/pkg/parser/models"
+	"io"
 	"os"
 )
 
@@ -281,4 +283,28 @@ func Test() error {
 		return err
 	}
 	return nil
+}
+
+type BooksTOCTemplateInput struct {
+	BookNames []string
+}
+
+func GenerateBooksTOC(input BooksTOCTemplateInput) string {
+	txt, err := os.ReadFile("assets/html/books-toc.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	tmpl, err := template.New("BooksTOC").Parse(string(txt))
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var buf bytes.Buffer
+	writer := io.Writer(&buf)
+	err = tmpl.Execute(writer, input)
+	if err != nil {
+		panic(err.Error())
+	}
+	return buf.String()
 }
