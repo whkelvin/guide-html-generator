@@ -1,118 +1,106 @@
 package parser
 
 import (
-	"errors"
-	. "html_generator/pkg/constant"
-	. "html_generator/pkg/parser/models"
+	"encoding/csv"
+	"fmt"
 	"os"
 )
 
-func Parse() (*Chapter, error) {
-	filenames, err := readDir(UserInputJsonPath)
-	if err != nil {
-		return nil, err
-	}
-	root := plantTree(filenames, "")
-
-	chapter, err := constructChapterFromTree(root)
-	if err != nil {
-		return nil, err
-	}
-	return chapter, nil
+type Heading struct {
+	Name string
+	Type string
+	Url  string
+}
+type Chapter struct {
+	Filename      string
+	Name          string
+	Headings      []Heading
+	RangeAudioUrl string
+	Next          string
+	Prev          string
+}
+type Book struct {
+	Name     string
+	Chapters []Chapter
+}
+type Series struct {
+	Books []Book
 }
 
-func constructChapterFromTree(tree Tree) (*Chapter, error) {
-	if !tree.HasChild() {
-		filename := UserInputJsonPath + "/" + tree.Title + ".json"
-		input, err := readUserGeneratedModelFromJson(filename)
-		if err != nil {
-			return nil, err
-		}
-
-		if _, err := os.Stat(AssetsNavigationMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Navigation = false
-		} else {
-			input.Navigation = true
-		}
-
-		if _, err := os.Stat(AssetsRawMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Raw = false
-		} else {
-			input.Raw = true
-		}
-
-		if _, err := os.Stat(AssetsRecordingMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Recording = false
-		} else {
-			input.Recording = true
-		}
-
-		if _, err := os.Stat(AssetsTranslationMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Translation = false
-		} else {
-			input.Translation = true
-		}
-
-		var navigationFilepath = ""
-		var translationFilepath = ""
-		var recordingFilepath = ""
-		var rawFilepath = ""
-
-		if input.Navigation {
-			navigationFilepath = NavigationMP3Path + "/" + input.Filename
-		}
-		if input.Translation {
-			translationFilepath = TranslationMP3Path + "/" + input.Filename
-		}
-		if input.Raw {
-			rawFilepath = RawMP3Path + "/" + input.Filename
-		}
-		if input.Recording {
-			recordingFilepath = RecordingMP3Path + "/" + input.Filename
-		}
-
-		return &Chapter{
-			Title:       input.Title,
-			Navigation:  navigationFilepath,
-			Recording:   recordingFilepath,
-			Raw:         rawFilepath,
-			Translation: translationFilepath,
-			Children:    []Chapter{},
-		}, nil
+func ParseFolder(path string) *Series {
+	bookCount := countItems(path)
+	s := Series{
+		Books: make([]Book, bookCount),
 	}
 
-	var children []Chapter = []Chapter{}
-	for i := 0; i < len(tree.Children); i++ {
-		chapter, err := constructChapterFromTree(tree.Children[i])
-		if err != nil {
-			return nil, err
+	for i := 0; i < bookCount; i++ {
+		s.Books[i].Name = fmt.Sprintf("冊%v", i+1)
+		chapterCount := countItems(path + "/" + s.Books[i].Name)
+		s.Books[i].Chapters = make([]Chapter, chapterCount)
+		for j := 0; j < chapterCount; j++ {
+			csvPath := fmt.Sprintf("%v/冊%v/表%v.csv", path, i+1, j+1)
+			s.Books[i].Chapters[j] = *getChapterFromCsv(csvPath, fmt.Sprintf("冊%v表%v", i+1, j+1))
 		}
-		children = append(children, *chapter)
 	}
+	return &s
+}
 
-	filename := UserInputJsonPath + "/" + tree.Title + ".json"
-	if tree.IsRoot() {
-
-		return &Chapter{
-			Title:       "",
-			Raw:         "",
-			Translation: "",
-			Recording:   "",
-			Navigation:  "",
-			Children:    children,
-		}, nil
+func countItems(folderPath string) int {
+	d, e := os.ReadDir(folderPath)
+	if e != nil {
+		return 0
 	}
-	input, err := readUserGeneratedModelFromJson(filename)
+	return len(d)
+}
+
+func getChapterFromCsv(path string, filenameWithoutExtention string) *Chapter {
+	file, err := os.Open(path)
+	// Checks for the error
 	if err != nil {
-		return nil, err
+		panic("Error while reading the file: " + path + " " + err.Error())
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic("Error reading records")
 	}
 
-	return &Chapter{
-		Title:       input.Title,
-		Raw:         "",
-		Translation: "",
-		Recording:   "",
-		Navigation:  "",
-		Children:    children,
-	}, nil
+	TITLE_ROW := 0
+	TITLE_COL := 0
+
+	RANGE_AUDIO_PATH_ROW := 1
+	RANGE_AUDIO_PATH_COL := 1
+
+	PREV_ROW := 2
+	PREV_COL := 1
+
+	NEXT_ROW := 3
+	NEXT_COL := 1
+
+	HEADING_COL := 0
+	TYPE_COL := 1
+	URL_COL := 2
+
+	chapter := Chapter{
+		Name:          records[TITLE_ROW][TITLE_COL],
+		Filename:      filenameWithoutExtention,
+		RangeAudioUrl: records[RANGE_AUDIO_PATH_ROW][RANGE_AUDIO_PATH_COL],
+		Next:          records[NEXT_ROW][NEXT_COL],
+		Prev:          records[PREV_ROW][PREV_COL],
+		Headings:      []Heading{},
+	}
+
+	headingCount := len(records) - 5
+	if headingCount > 0 {
+		for i := 5; i < len(records); i++ {
+			chapter.Headings = append(chapter.Headings, Heading{
+				Name: records[i][HEADING_COL],
+				Type: records[i][TYPE_COL],
+				Url:  records[i][URL_COL],
+			})
+		}
+	}
+	return &chapter
 }

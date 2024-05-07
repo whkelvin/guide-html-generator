@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>章節列表</title>
+  <script src="./wh-audio.js" type="module"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    {{ range $index, $element := .Headings }}
+    const c{{$index}}Url = "{{$element.Url}}";
+    {{ end }}
+
+    const basePath = "{{.BasePath}}";
+    let selection = "師父音檔";
+
+    {{range $index, $element := .Headings}}
+    let src{{$index}} = basePath + selection + c{{$index}}Url;
+    {{end}}
+
+    function changeAudioSelection() {
+      let e = document.getElementById("audio");
+      selection = e.value;
+
+      {{range $index, $element := .Headings}}
+      src{{$index}} = basePath + selection + "/" + c{{$index}}Url;
+      {{end}}
+
+      {{range $index, $element := .Headings}}
+      let e{{$index}} = document.getElementById("c{{$index}}");
+      {{end}}
+
+      {{range $index, $element := .Headings}}
+      {{if eq $element.Type "Audio"}}
+      e{{$index}}.src = src{{$index}};
+      {{end}}
+      {{end}}
+
+      {{range $index, $element := .Headings}}
+      {{if eq $element.Type "Audio"}}
+      let a{{$index}} = document.getElementById("a{{$index}}");
+      {{end}}
+      {{end}}
+
+      {{range $index, $element := .Headings}}
+      {{if eq $element.Type "Audio"}}
+      a{{$index}}.load();
+      {{end}}
+      {{end}}
+    }
+  </script>
+</head>
+
+<body class="h-screen p-8">
+  <h1>{{.Title}}</h1>
+
+  <audio controls class="m-2">
+    <source src="{{.BasePath}}{{.RangeAudioUrl}}.mp3" type="audio/mpeg" />
+  </audio>
+
+  {{if eq .Prev ""}}
+  <a>上一表</a>
+  {{else}}
+  <a href="{{.Prev}}.html">上一表</a>
+  {{end}}
+
+  {{if eq .Next ""}}
+  <a>下一表</a>
+  {{else}}
+  <a href="{{.Next}}.html">下一表</a>
+  {{end}}
+
+  <div class="flex flex-col">
+  {{range $index, $element := .Headings}} 
+    {{if eq $element.Type "Audio"}}
+    <h1 class="min-w-64 font-bold">{{$element.Name}}</h1>
+    <figure>
+      <figcaption>原文</figcaption>
+      <audio controls class="m-2">
+        <source src="{{$.BasePath}}原文/{{$element.Url}}.mp3" type="audio/mpeg" />
+      </audio>
+    </figure>
+    <audio id="a{{$index}}" controls class="m-2">
+      <source id="c{{$index}}" src="{{$.BasePath}}師父音檔/{{$element.Url}}.mp3" type="audio/mpeg" />
+    </audio>
+    {{else}}
+    <div class="flex flex-col">
+      <a href="{{$element.Url}}" class="min-w-64 font-bold">{{$element.Name}}</a>
+    </div>
+    {{end}} 
+  {{end}}
+  </div>
+
+
+
+  <div class="p-10">
+    <select onchange="changeAudioSelection()" class="min-w-64" name="alphabet" id="audio">
+      <option selected value="師父音檔">師父音檔</option>
+      <option value="四家合註語譯">四家合註語譯</option>
+      <option value="上下層科判">上下層科判</option>
+      <option value="各科範圍">各科範圍</option>
+    </select>
+  </div>
+</body>
+
+</html>
