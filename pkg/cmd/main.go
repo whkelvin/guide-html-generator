@@ -4,10 +4,25 @@ import (
 	"fmt"
 	. "html_generator/pkg/generator"
 	"html_generator/pkg/parser"
+	"io"
 	"os"
 )
 
 func main() {
+	src := "./assets/html/wh-audio.js"
+	dst := "./out/wh-audio.js"
+	_, err := copyFile(src, dst)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	src = "./assets/html/wh-raw-audio.js"
+	dst = "./out/wh-raw-audio.js"
+	_, err = copyFile(src, dst)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	series := parser.ParseFolder("./assets/input")
 
 	bookNames := []string{}
@@ -60,4 +75,25 @@ func saveToFile(filename string, content string) {
 	}
 	defer file.Close()
 	file.WriteString(content)
+}
+
+func copyFile(src, dst string) (int64, error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer sourceFile.Close()
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destinationFile.Close()
+
+	nBytes, err := io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return nBytes, err
+	}
+
+	return nBytes, nil
 }
