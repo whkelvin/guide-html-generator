@@ -23,6 +23,13 @@ func main() {
 		panic(err.Error())
 	}
 
+	src = "./assets/html/wh-range-audio.js"
+	dst = "./out/wh-range-audio.js"
+	_, err = copyFile(src, dst)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	series := parser.ParseFolder("./assets/input")
 
 	bookNames := []string{}
