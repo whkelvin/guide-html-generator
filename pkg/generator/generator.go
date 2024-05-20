@@ -18,7 +18,14 @@ func GenerateBooksTOC(input BooksTOCTemplateInput) string {
 		panic(err.Error())
 	}
 
-	tmpl, err := template.New("BooksTOC").Parse(string(txt))
+	funcMap := template.FuncMap{
+		// The name "inc" is what the function will be called in the template text.
+		"inc": func(i int) int {
+			return i + 1
+		},
+	}
+
+	tmpl, err := template.New("BooksTOC").Funcs(funcMap).Parse(string(txt))
 	if err != nil {
 		panic(err.Error())
 	}
