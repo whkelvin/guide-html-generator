@@ -12,12 +12,13 @@ type Heading struct {
 	Url  string
 }
 type Chapter struct {
-	Filename      string
-	Name          string
-	Headings      []Heading
-	RangeAudioUrl string
-	Next          string
-	Prev          string
+	Filename       string
+	Name           string
+	Headings       []Heading
+	RangeAudioUrl  string
+	Next           string
+	Prev           string
+	TotalBookCount int
 }
 type Book struct {
 	Name     string
@@ -39,7 +40,7 @@ func ParseFolder(path string) *Series {
 		s.Books[i].Chapters = make([]Chapter, chapterCount)
 		for j := 0; j < chapterCount; j++ {
 			csvPath := fmt.Sprintf("%v/冊%v/表%v.csv", path, i+1, j+1)
-			s.Books[i].Chapters[j] = *getChapterFromCsv(csvPath, fmt.Sprintf("冊%v表%v", i+1, j+1))
+			s.Books[i].Chapters[j] = *getChapterFromCsv(csvPath, fmt.Sprintf("冊%v表%v", i+1, j+1), bookCount)
 		}
 	}
 	return &s
@@ -53,7 +54,7 @@ func countItems(folderPath string) int {
 	return len(d)
 }
 
-func getChapterFromCsv(path string, filenameWithoutExtention string) *Chapter {
+func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCount int) *Chapter {
 	file, err := os.Open(path)
 	// Checks for the error
 	if err != nil {
@@ -84,12 +85,13 @@ func getChapterFromCsv(path string, filenameWithoutExtention string) *Chapter {
 	URL_COL := 2
 
 	chapter := Chapter{
-		Name:          records[TITLE_ROW][TITLE_COL],
-		Filename:      filenameWithoutExtention,
-		RangeAudioUrl: records[RANGE_AUDIO_PATH_ROW][RANGE_AUDIO_PATH_COL],
-		Next:          records[NEXT_ROW][NEXT_COL],
-		Prev:          records[PREV_ROW][PREV_COL],
-		Headings:      []Heading{},
+		Name:           records[TITLE_ROW][TITLE_COL],
+		Filename:       filenameWithoutExtention,
+		RangeAudioUrl:  records[RANGE_AUDIO_PATH_ROW][RANGE_AUDIO_PATH_COL],
+		Next:           records[NEXT_ROW][NEXT_COL],
+		Prev:           records[PREV_ROW][PREV_COL],
+		Headings:       []Heading{},
+		TotalBookCount: totalBookCount,
 	}
 
 	headingCount := len(records) - 5

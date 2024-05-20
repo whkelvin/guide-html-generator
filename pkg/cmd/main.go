@@ -49,6 +49,10 @@ func main() {
 					Url:  series.Books[i].Chapters[j].Headings[k].Url,
 				})
 			}
+			booknames := []string{}
+			for n := 0; n < series.Books[i].Chapters[j].TotalBookCount; n++ {
+				booknames = append(booknames, fmt.Sprintf("冊%v目錄", n+1))
+			}
 			contentTmplInput := ContentTemplateInput{
 				BasePath:      "./assets/mp3/",
 				Headings:      headings,
@@ -56,6 +60,7 @@ func main() {
 				Prev:          series.Books[i].Chapters[j].Prev,
 				Title:         series.Books[i].Chapters[j].Name,
 				RangeAudioUrl: series.Books[i].Chapters[j].RangeAudioUrl,
+				BookNames:     booknames,
 			}
 			contentTmplOut := GenerateContent(contentTmplInput)
 			filename := fmt.Sprintf("冊%v表%v.html", i+1, j+1)
