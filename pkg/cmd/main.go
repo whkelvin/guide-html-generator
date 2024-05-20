@@ -34,21 +34,25 @@ func main() {
 
 	bookNames := []string{}
 	for i := 0; i < len(series.Books); i++ {
+
 		bookNames = append(bookNames, series.Books[i].Name)
 		chapters := []Chapter{}
 		for j := 0; j < len(series.Books[i].Chapters); j++ {
 			chapters = append(chapters, Chapter{
 				Filename: series.Books[i].Chapters[j].Filename,
-				Name:     series.Books[i].Chapters[j].Name,
+				Name:     series.Books[i].Chapters[j].TOCTitle,
 			})
+
 			headings := []Heading{}
 			for k := 0; k < len(series.Books[i].Chapters[j].Headings); k++ {
 				headings = append(headings, Heading{
-					Name: series.Books[i].Chapters[j].Headings[k].Name,
-					Type: series.Books[i].Chapters[j].Headings[k].Type,
-					Url:  series.Books[i].Chapters[j].Headings[k].Url,
+					Name:        series.Books[i].Chapters[j].Headings[k].Name,
+					Type:        series.Books[i].Chapters[j].Headings[k].Type,
+					Url:         series.Books[i].Chapters[j].Headings[k].Url,
+					LinkBtnText: series.Books[i].Chapters[j].Headings[k].BtnName,
 				})
 			}
+
 			booknames := []string{}
 			for n := 0; n < series.Books[i].Chapters[j].TotalBookCount; n++ {
 				booknames = append(booknames, fmt.Sprintf("冊%v目錄", n+1))
@@ -58,16 +62,18 @@ func main() {
 				Headings:      headings,
 				Next:          series.Books[i].Chapters[j].Next,
 				Prev:          series.Books[i].Chapters[j].Prev,
-				Title:         series.Books[i].Chapters[j].Name,
+				Title:         series.Books[i].Chapters[j].Title,
 				RangeAudioUrl: series.Books[i].Chapters[j].RangeAudioUrl,
 				BookNames:     booknames,
+				BookNumber:    series.Books[i].Chapters[j].BookNumber,
 			}
 			contentTmplOut := GenerateContent(contentTmplInput)
 			filename := fmt.Sprintf("冊%v表%v.html", i+1, j+1)
 			saveToFile(filename, contentTmplOut)
 		}
 		bookTemplateInput := BookTOCTemplateInput{
-			Chapters: chapters,
+			Chapters:   chapters,
+			BookNumber: i + 1,
 		}
 		bookTmplOut := GenerateBookTOC(bookTemplateInput)
 		filename := fmt.Sprintf("冊%v.html", i+1)

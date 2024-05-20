@@ -7,18 +7,21 @@ import (
 )
 
 type Heading struct {
-	Name string
-	Type string
-	Url  string
+	Name    string
+	Type    string
+	Url     string
+	BtnName string
 }
 type Chapter struct {
 	Filename       string
-	Name           string
+	TOCTitle       string
+	Title          string
 	Headings       []Heading
 	RangeAudioUrl  string
 	Next           string
 	Prev           string
 	TotalBookCount int
+	BookNumber     int
 }
 type Book struct {
 	Name     string
@@ -40,7 +43,7 @@ func ParseFolder(path string) *Series {
 		s.Books[i].Chapters = make([]Chapter, chapterCount)
 		for j := 0; j < chapterCount; j++ {
 			csvPath := fmt.Sprintf("%v/冊%v/表%v.csv", path, i+1, j+1)
-			s.Books[i].Chapters[j] = *getChapterFromCsv(csvPath, fmt.Sprintf("冊%v表%v", i+1, j+1), bookCount)
+			s.Books[i].Chapters[j] = *getChapterFromCsv(csvPath, fmt.Sprintf("冊%v表%v", i+1, j+1), bookCount, i+1)
 		}
 	}
 	return &s
@@ -54,7 +57,7 @@ func countItems(folderPath string) int {
 	return len(d)
 }
 
-func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCount int) *Chapter {
+func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCount int, bookNumber int) *Chapter {
 	file, err := os.Open(path)
 	// Checks for the error
 	if err != nil {
@@ -68,8 +71,11 @@ func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCo
 		panic("Error reading records")
 	}
 
+	TOC_TITLE_ROW := 0
+	TOC_TITLE_COL := 1
+
 	TITLE_ROW := 0
-	TITLE_COL := 0
+	TITLE_COL := 3
 
 	RANGE_AUDIO_PATH_ROW := 1
 	RANGE_AUDIO_PATH_COL := 1
@@ -84,23 +90,28 @@ func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCo
 	TYPE_COL := 1
 	URL_COL := 2
 
+	LINK_BTN_NAME_COL := 3
+
 	chapter := Chapter{
-		Name:           records[TITLE_ROW][TITLE_COL],
+		TOCTitle:       records[TOC_TITLE_ROW][TOC_TITLE_COL],
+		Title:          records[TITLE_ROW][TITLE_COL],
 		Filename:       filenameWithoutExtention,
 		RangeAudioUrl:  records[RANGE_AUDIO_PATH_ROW][RANGE_AUDIO_PATH_COL],
 		Next:           records[NEXT_ROW][NEXT_COL],
 		Prev:           records[PREV_ROW][PREV_COL],
 		Headings:       []Heading{},
 		TotalBookCount: totalBookCount,
+		BookNumber:     bookNumber,
 	}
 
 	headingCount := len(records) - 5
 	if headingCount > 0 {
 		for i := 5; i < len(records); i++ {
 			chapter.Headings = append(chapter.Headings, Heading{
-				Name: records[i][HEADING_COL],
-				Type: records[i][TYPE_COL],
-				Url:  records[i][URL_COL],
+				Name:    records[i][HEADING_COL],
+				Type:    records[i][TYPE_COL],
+				Url:     records[i][URL_COL],
+				BtnName: records[i][LINK_BTN_NAME_COL],
 			})
 		}
 	}

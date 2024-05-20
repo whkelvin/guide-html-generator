@@ -45,7 +45,8 @@ type Chapter struct {
 }
 
 type BookTOCTemplateInput struct {
-	Chapters []Chapter
+	BookNumber int
+	Chapters   []Chapter
 }
 
 func GenerateBookTOC(input BookTOCTemplateInput) string {
@@ -69,9 +70,10 @@ func GenerateBookTOC(input BookTOCTemplateInput) string {
 }
 
 type Heading struct {
-	Name string
-	Type string
-	Url  string
+	Name        string
+	Type        string
+	Url         string
+	LinkBtnText string
 }
 
 type ContentTemplateInput struct {
@@ -82,6 +84,7 @@ type ContentTemplateInput struct {
 	Title         string
 	BasePath      string
 	BookNames     []string
+	BookNumber    int
 }
 
 func GenerateContent(input ContentTemplateInput) string {
