@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/log"
 	. "html_generator/pkg/generator"
 	"html_generator/pkg/parser"
 	"io"
@@ -31,10 +32,8 @@ func main() {
 	}
 
 	series := parser.ParseFolder("./assets/input")
-
 	bookNames := []string{}
 	for i := 0; i < len(series.Books); i++ {
-
 		bookNames = append(bookNames, series.Books[i].Name)
 		chapters := []Chapter{}
 		for j := 0; j < len(series.Books[i].Chapters); j++ {
@@ -65,14 +64,22 @@ func main() {
 				Title:         series.Books[i].Chapters[j].Title,
 				RangeAudioUrl: series.Books[i].Chapters[j].RangeAudioUrl,
 				BookNames:     booknames,
-				BookNumber:    series.Books[i].Chapters[j].BookNumber,
+				BookNumber:    i + 1,
 			}
 			contentTmplOut := GenerateContent(contentTmplInput)
-			filename := fmt.Sprintf("冊%v表%v.html", i+1, j+1)
+			filename := fmt.Sprintf("%v.html", series.Books[i].Chapters[j].Filename)
 			saveToFile(filename, contentTmplOut)
 		}
+		items := []TOCItem{}
+		for n := 0; n < len(series.Books[i].TOC.TOCItems); n++ {
+			items = append(items, TOCItem{
+				Title: series.Books[i].TOC.TOCItems[n].Title,
+				Type:  series.Books[i].TOC.TOCItems[n].Type,
+				Url:   series.Books[i].TOC.TOCItems[n].Url,
+			})
+		}
 		bookTemplateInput := BookTOCTemplateInput{
-			Chapters:   chapters,
+			Items:      items,
 			BookNumber: i + 1,
 		}
 		bookTmplOut := GenerateBookTOC(bookTemplateInput)
@@ -93,6 +100,7 @@ func saveToFile(filename string, content string) {
 	}
 	defer file.Close()
 	file.WriteString(content)
+	log.Infof("%v written to disk", filename)
 }
 
 func copyFile(src, dst string) (int64, error) {

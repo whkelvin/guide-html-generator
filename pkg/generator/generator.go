@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	//"github.com/charmbracelet/log"
 	"io"
 	"os"
 	"strings"
@@ -44,9 +45,15 @@ type Chapter struct {
 	Name     string
 }
 
+type TOCItem struct {
+	Title string
+	Type  string
+	Url   string
+}
+
 type BookTOCTemplateInput struct {
+	Items      []TOCItem
 	BookNumber int
-	Chapters   []Chapter
 }
 
 func GenerateBookTOC(input BookTOCTemplateInput) string {
