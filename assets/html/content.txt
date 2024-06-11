@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>{{.Title}}</title>
+  <script src="./wh-audio.js" type="module"></script>
+  <script src="./wh-raw-audio.js" type="module"></script>
+  <script src="./wh-range-audio.js" type="module"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    {{range $index, $element := .Headings -}}
+    const c{{$index}}Url = "{{$element.Url}}";
+    {{ end }}
+    const basePath = "{{.BasePath}}";
+    let selection = "師父音檔";
+    {{range $index, $element := .Headings -}}
+    let src{{$index}} = basePath + selection + c{{$index}}Url;
+    {{end}}
+
+    function changeAudioSelection() {
+      let e = document.getElementById("audio");
+      selection = e.value;
+      {{range $index, $element := .Headings -}}
+      src{{$index}} = basePath + selection + "/" + c{{$index}}Url;
+      {{end}}
+      {{range $index, $element := .Headings -}}
+      let e{{$index}} = document.getElementById("c{{$index}}");
+      {{end}}
+      {{range $index, $element := .Headings -}}
+      {{if eq $element.Type "Audio" -}}
+      e{{$index}}.setAttribute("src", src{{$index}} + ".mp3");
+      {{ end }}
+      {{- end }}
+    }
+  </script>
+</head>
+
+<body class="h-screen p-8">
+  <div class="flex flex-row my-4 items-center">
+    <h1 class="font-bold">{{.Title}}</h1>
+    <wh-range-audio class="m-2" src="{{.BasePath}}本表範圍/{{.RangeAudioUrl}}.mp3"></wh-ragne-audio>
+  </div>
+
+  <div class="my-4">
+  {{if ne .Prev "" -}}
+  <a class="mr-4" href="{{.Prev}}.html">上一表</a>
+  {{- end }}
+
+  <a class="mr-4" href="冊{{.BookNumber}}.html">回本冊目錄</a>
+
+  <!--
+  {{range $index, $name := .BookNames}}
+    <a class="mr-4" href="冊{{inc $index}}.html">{{$name}}</a>
+  {{end}}
+  -->
+
+  {{if ne .Next "" -}}
+  <a class="mr-4" href="{{.Next}}.html">下一表</a>
+  {{- end}}
+  </div>
+
+  <div class="flex flex-col">
+  {{range $index, $element := .Headings -}} 
+    {{if eq $element.Type "Audio" -}}
+    <div class="flex flex-col">
+      <h1 class="min-w-64 font-bold">{{$element.Name}}</h1>
+      <div class="flex flex-row">
+        <wh-raw-audio class="m-2" src="{{$.BasePath}}原文/{{$element.Url}}.mp3"></wh-raw-audio>
+        <wh-audio class="m-2" id="c{{$index}}" src="{{$.BasePath}}師父音檔/{{$element.Url}}.mp3"></wh-audio>
+      </div>
+    </div>
+    {{else -}}
+    <div class="flex flex-col">
+      <h1 class="min-w-64 font-bold">{{$element.Name}}</h1>
+      <div class="flex flex-row">
+        <a href="{{$element.Url}}.html" class="m-2"><button>{{$element.LinkBtnText}}</button></a>
+      </div>
+    </div>
+    {{end -}} 
+  {{end -}}
+  </div>
+  <div class="my-6 py-6">
+    <select onchange="changeAudioSelection()" class="min-w-64" name="alphabet" id="audio">
+      <option selected value="師父音檔">師父音檔</option>
+      <option value="四家合註語譯">四家合註語譯</option>
+      <option value="上下層科判">上下層科判</option>
+      <option value="各科範圍">各科範圍</option>
+    </select>
+  </div>
+</body>
+</html>

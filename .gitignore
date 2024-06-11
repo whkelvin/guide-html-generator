@@ -3,5 +3,4 @@
 dist/*.html
 debug/*.json
 out/
-assets/
 
