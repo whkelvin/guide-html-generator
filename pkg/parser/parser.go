@@ -1,118 +1,213 @@
 package parser
 
 import (
-	"errors"
-	. "html_generator/pkg/constant"
-	. "html_generator/pkg/parser/models"
+	"encoding/csv"
+	"fmt"
+	"github.com/charmbracelet/log"
 	"os"
+	"strings"
 )
 
-func Parse() (*Chapter, error) {
-	filenames, err := readDir(UserInputJsonPath)
-	if err != nil {
-		return nil, err
-	}
-	root := plantTree(filenames, "")
-
-	chapter, err := constructChapterFromTree(root)
-	if err != nil {
-		return nil, err
-	}
-	return chapter, nil
+type Heading struct {
+	Name    string
+	Type    string
+	Url     string
+	BtnName string
 }
 
-func constructChapterFromTree(tree Tree) (*Chapter, error) {
-	if !tree.HasChild() {
-		filename := UserInputJsonPath + "/" + tree.Title + ".json"
-		input, err := readUserGeneratedModelFromJson(filename)
-		if err != nil {
-			return nil, err
-		}
+type Chapter struct {
+	Filename       string
+	Title          string
+	Headings       []Heading
+	RangeAudioUrl  string
+	Next           string
+	Prev           string
+	TotalBookCount int
+	BookNumber     int
+}
 
-		if _, err := os.Stat(AssetsNavigationMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Navigation = false
-		} else {
-			input.Navigation = true
-		}
+type Book struct {
+	Name     string
+	Chapters []Chapter
+	TOC      TOC
+}
 
-		if _, err := os.Stat(AssetsRawMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Raw = false
-		} else {
-			input.Raw = true
-		}
+type Series struct {
+	Books []Book
+}
 
-		if _, err := os.Stat(AssetsRecordingMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Recording = false
-		} else {
-			input.Recording = true
-		}
+type TOC struct {
+	TOCItems []TOCItem
+}
 
-		if _, err := os.Stat(AssetsTranslationMP3Path + "/" + input.Filename + ".mp3"); errors.Is(err, os.ErrNotExist) {
-			input.Translation = false
-		} else {
-			input.Translation = true
-		}
+type TOCItem struct {
+	Title string
+	Type  string
+	Url   string
+}
 
-		var navigationFilepath = ""
-		var translationFilepath = ""
-		var recordingFilepath = ""
-		var rawFilepath = ""
-
-		if input.Navigation {
-			navigationFilepath = NavigationMP3Path + "/" + input.Filename
-		}
-		if input.Translation {
-			translationFilepath = TranslationMP3Path + "/" + input.Filename
-		}
-		if input.Raw {
-			rawFilepath = RawMP3Path + "/" + input.Filename
-		}
-		if input.Recording {
-			recordingFilepath = RecordingMP3Path + "/" + input.Filename
-		}
-
-		return &Chapter{
-			Title:       input.Title,
-			Navigation:  navigationFilepath,
-			Recording:   recordingFilepath,
-			Raw:         rawFilepath,
-			Translation: translationFilepath,
-			Children:    []Chapter{},
-		}, nil
+func ParseFolder(path string) *Series {
+	log.Info("開始掃描input資料夾 ...")
+	bookCount := countItems(path)
+	s := Series{
+		Books: make([]Book, bookCount),
 	}
+	log.Infof("找到%v冊內容", bookCount)
 
-	var children []Chapter = []Chapter{}
-	for i := 0; i < len(tree.Children); i++ {
-		chapter, err := constructChapterFromTree(tree.Children[i])
-		if err != nil {
-			return nil, err
+	for i := 0; i < bookCount; i++ {
+		s.Books[i].Name = fmt.Sprintf("冊%v", i+1)
+		files := listFiles(path + "/" + s.Books[i].Name)
+
+		s.Books[i].Chapters = []Chapter{}
+
+		tocFilePath := fmt.Sprintf("%v/冊%v/index.csv", path, i+1)
+		log.Infof("正在讀取冊%v目錄頁...", i+1)
+		s.Books[i].TOC = *getTOCFromCsv(tocFilePath)
+
+		for j := 0; j < len(files); j++ {
+			if files[j] != "index.csv" {
+				csvPath := fmt.Sprintf("%v/冊%v/%v", path, i+1, files[j])
+				filenameWithoutExtention := RemoveSuffix(files[j], ".csv")
+				log.Infof("正在讀取 %v : %v 內容", s.Books[i].Name, filenameWithoutExtention)
+				chapter := *getChapterFromCsv(csvPath, fmt.Sprintf("冊%v%v", i+1, filenameWithoutExtention), bookCount, i+1)
+				s.Books[i].Chapters = append(s.Books[i].Chapters, chapter)
+			}
 		}
-		children = append(children, *chapter)
+		log.Infof("讀取共%v表", len(s.Books[i].Chapters))
 	}
+	return &s
+}
 
-	filename := UserInputJsonPath + "/" + tree.Title + ".json"
-	if tree.IsRoot() {
-
-		return &Chapter{
-			Title:       "",
-			Raw:         "",
-			Translation: "",
-			Recording:   "",
-			Navigation:  "",
-			Children:    children,
-		}, nil
+func countItems(folderPath string) int {
+	d, e := os.ReadDir(folderPath)
+	if e != nil {
+		return 0
 	}
-	input, err := readUserGeneratedModelFromJson(filename)
+	return len(d)
+}
+
+func RemoveSuffix(s, suffix string) string {
+	if strings.HasSuffix(s, suffix) {
+		return s[:len(s)-len(suffix)]
+	}
+	return s
+}
+
+func listFiles(folderPath string) []string {
+	var filenames []string
+
+	// Open the directory
+	dir, err := os.Open(folderPath)
 	if err != nil {
-		return nil, err
+		panic(err)
+	}
+	defer dir.Close()
+
+	// Read the directory's contents
+	files, err := dir.Readdir(-1)
+	if err != nil {
+		panic(err)
 	}
 
-	return &Chapter{
-		Title:       input.Title,
-		Raw:         "",
-		Translation: "",
-		Recording:   "",
-		Navigation:  "",
-		Children:    children,
-	}, nil
+	// Loop through the files and collect their names
+	for _, file := range files {
+		if !file.IsDir() {
+			filenames = append(filenames, file.Name())
+		}
+	}
+
+	return filenames
+}
+
+func getTOCFromCsv(path string) *TOC {
+	file, err := os.Open(path)
+	// Checks for the error
+	if err != nil {
+		panic("Error while reading the file: " + path + " " + err.Error())
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic("Error reading records")
+	}
+
+	TOC_TITLE_COl := 0
+	TOC_TYPE_COl := 1
+	TOC_URL_COl := 2
+
+	itemCount := len(records) - 1 // not counting the header row
+	tocItems := make([]TOCItem, itemCount)
+
+	toc := TOC{
+		TOCItems: tocItems,
+	}
+
+	for i := 0; i < itemCount; i++ {
+		log.Infof("找到目錄頁標題: %v", records[i+1][TOC_TITLE_COl])
+		toc.TOCItems[i].Title = records[i+1][TOC_TITLE_COl]
+		toc.TOCItems[i].Type = records[i+1][TOC_TYPE_COl]
+		toc.TOCItems[i].Url = records[i+1][TOC_URL_COl]
+	}
+
+	return &toc
+}
+
+func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCount int, bookNumber int) *Chapter {
+	file, err := os.Open(path)
+	// Checks for the error
+	if err != nil {
+		panic("Error while reading the file: " + path + " " + err.Error())
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic("Error reading records")
+	}
+
+	TITLE_ROW := 0
+	TITLE_COL := 1
+
+	RANGE_AUDIO_PATH_ROW := 1
+	RANGE_AUDIO_PATH_COL := 1
+
+	PREV_ROW := 2
+	PREV_COL := 1
+
+	NEXT_ROW := 3
+	NEXT_COL := 1
+
+	HEADING_COL := 0
+	TYPE_COL := 1
+	URL_COL := 2
+
+	LINK_BTN_NAME_COL := 3
+
+	chapter := Chapter{
+		Title:          records[TITLE_ROW][TITLE_COL],
+		Filename:       filenameWithoutExtention,
+		RangeAudioUrl:  records[RANGE_AUDIO_PATH_ROW][RANGE_AUDIO_PATH_COL],
+		Next:           records[NEXT_ROW][NEXT_COL],
+		Prev:           records[PREV_ROW][PREV_COL],
+		Headings:       []Heading{},
+		TotalBookCount: totalBookCount,
+		BookNumber:     bookNumber,
+	}
+
+	headingCount := len(records) - 5
+	if headingCount > 0 {
+		for i := 5; i < len(records); i++ {
+			chapter.Headings = append(chapter.Headings, Heading{
+				Name:    records[i][HEADING_COL],
+				Type:    records[i][TYPE_COL],
+				Url:     records[i][URL_COL],
+				BtnName: records[i][LINK_BTN_NAME_COL],
+			})
+		}
+	}
+
+	return &chapter
 }
