@@ -17,7 +17,6 @@ type Heading struct {
 
 type Chapter struct {
 	Filename       string
-	TOCTitle       string
 	Title          string
 	Headings       []Heading
 	RangeAudioUrl  string
@@ -48,12 +47,12 @@ type TOCItem struct {
 }
 
 func ParseFolder(path string) *Series {
-	log.Info("Parsing Folder ...")
+	log.Info("開始掃描input資料夾 ...")
 	bookCount := countItems(path)
 	s := Series{
 		Books: make([]Book, bookCount),
 	}
-	log.Infof("%v books found!", bookCount)
+	log.Infof("找到%v冊內容", bookCount)
 
 	for i := 0; i < bookCount; i++ {
 		s.Books[i].Name = fmt.Sprintf("冊%v", i+1)
@@ -62,18 +61,19 @@ func ParseFolder(path string) *Series {
 		s.Books[i].Chapters = []Chapter{}
 
 		tocFilePath := fmt.Sprintf("%v/冊%v/index.csv", path, i+1)
+		log.Infof("正在讀取冊%v目錄頁...", i+1)
 		s.Books[i].TOC = *getTOCFromCsv(tocFilePath)
 
 		for j := 0; j < len(files); j++ {
 			if files[j] != "index.csv" {
 				csvPath := fmt.Sprintf("%v/冊%v/%v", path, i+1, files[j])
 				filenameWithoutExtention := RemoveSuffix(files[j], ".csv")
-				log.Infof("Getting Chapter Infomation: %v : %v", s.Books[i].Name, filenameWithoutExtention)
+				log.Infof("正在讀取 %v : %v 內容", s.Books[i].Name, filenameWithoutExtention)
 				chapter := *getChapterFromCsv(csvPath, fmt.Sprintf("冊%v%v", i+1, filenameWithoutExtention), bookCount, i+1)
 				s.Books[i].Chapters = append(s.Books[i].Chapters, chapter)
 			}
 		}
-		log.Infof("%v chapters processed for this book.", len(s.Books[i].Chapters))
+		log.Infof("讀取共%v表", len(s.Books[i].Chapters))
 	}
 	return &s
 }
@@ -137,7 +137,6 @@ func getTOCFromCsv(path string) *TOC {
 	TOC_TYPE_COl := 1
 	TOC_URL_COl := 2
 
-	log.Info("Parsing TOC...")
 	itemCount := len(records) - 1 // not counting the header row
 	tocItems := make([]TOCItem, itemCount)
 
@@ -146,7 +145,7 @@ func getTOCFromCsv(path string) *TOC {
 	}
 
 	for i := 0; i < itemCount; i++ {
-		log.Infof("Processing TOC title %v", records[i+1][TOC_TITLE_COl])
+		log.Infof("找到目錄頁標題: %v", records[i+1][TOC_TITLE_COl])
 		toc.TOCItems[i].Title = records[i+1][TOC_TITLE_COl]
 		toc.TOCItems[i].Type = records[i+1][TOC_TYPE_COl]
 		toc.TOCItems[i].Url = records[i+1][TOC_URL_COl]
@@ -169,11 +168,8 @@ func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCo
 		panic("Error reading records")
 	}
 
-	TOC_TITLE_ROW := 0
-	TOC_TITLE_COL := 1
-
 	TITLE_ROW := 0
-	TITLE_COL := 3
+	TITLE_COL := 1
 
 	RANGE_AUDIO_PATH_ROW := 1
 	RANGE_AUDIO_PATH_COL := 1
@@ -191,7 +187,6 @@ func getChapterFromCsv(path string, filenameWithoutExtention string, totalBookCo
 	LINK_BTN_NAME_COL := 3
 
 	chapter := Chapter{
-		TOCTitle:       records[TOC_TITLE_ROW][TOC_TITLE_COL],
 		Title:          records[TITLE_ROW][TITLE_COL],
 		Filename:       filenameWithoutExtention,
 		RangeAudioUrl:  records[RANGE_AUDIO_PATH_ROW][RANGE_AUDIO_PATH_COL],

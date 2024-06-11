@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/charmbracelet/log"
 	. "html_generator/pkg/generator"
 	"html_generator/pkg/parser"
 	"io"
 	"os"
+	"strings"
+
+	"github.com/charmbracelet/log"
 )
 
 func main() {
@@ -35,13 +37,7 @@ func main() {
 	bookNames := []string{}
 	for i := 0; i < len(series.Books); i++ {
 		bookNames = append(bookNames, series.Books[i].Name)
-		chapters := []Chapter{}
 		for j := 0; j < len(series.Books[i].Chapters); j++ {
-			chapters = append(chapters, Chapter{
-				Filename: series.Books[i].Chapters[j].Filename,
-				Name:     series.Books[i].Chapters[j].TOCTitle,
-			})
-
 			headings := []Heading{}
 			for k := 0; k < len(series.Books[i].Chapters[j].Headings); k++ {
 				headings = append(headings, Heading{
@@ -90,6 +86,90 @@ func main() {
 		BookNames: bookNames}
 	booksTmplOut := GenerateBooksTOC(booksTemplateInput)
 	saveToFile("index.html", booksTmplOut)
+
+	log.Infof("正在檢查輸出網頁")
+
+	for i := 0; i < len(series.Books); i++ {
+		log.Infof("正在檢查冊%v...", i+1)
+
+		log.Infof("正在檢查冊%v目錄", i+1)
+		for n := 0; n < len(series.Books[i].TOC.TOCItems); n++ {
+			if series.Books[i].TOC.TOCItems[n].Type == "Link" {
+				if doesFileExist("./out/" + series.Books[i].TOC.TOCItems[n].Url + ".html") {
+					log.Infof("找到目錄標題連結: %v | %v", series.Books[i].TOC.TOCItems[n].Title, "./out/"+series.Books[i].TOC.TOCItems[n].Url+".html")
+				} else {
+					log.Errorf("無法找到目錄標題連結: %v | %v", series.Books[i].TOC.TOCItems[n].Title, "./out/"+series.Books[i].TOC.TOCItems[n].Url+".html")
+				}
+			}
+		}
+		for j := 0; j < len(series.Books[i].Chapters); j++ {
+			log.Infof("正在檢查%v", series.Books[i].Chapters[j].Filename)
+
+			if doesFileExist("./out/assets/mp3/原文/" + series.Books[i].Chapters[j].RangeAudioUrl + ".mp3") {
+				log.Info("找到本表範圍音檔!")
+			} else {
+				log.Errorf("無法找到本表範圍音檔: %v", "./out/assets/mp3/原文/"+series.Books[i].Chapters[j].RangeAudioUrl+".mp3")
+			}
+
+			if series.Books[i].Chapters[j].Prev != "" {
+				if doesFileExist("./out/" + series.Books[i].Chapters[j].Prev + ".html") {
+					log.Info("找到上一表!")
+				} else {
+					log.Errorf("無法找到上一表: %v", "./out/"+series.Books[i].Chapters[j].Prev+".html")
+				}
+			}
+
+			if series.Books[i].Chapters[j].Next != "" {
+				if doesFileExist("./out/" + series.Books[i].Chapters[j].Next + ".html") {
+					log.Info("找到下一表!")
+				} else {
+					log.Errorf("無法找到下一表: %v", "./out/"+series.Books[i].Chapters[j].Next+".html")
+				}
+			}
+
+			for k := 0; k < len(series.Books[i].Chapters[j].Headings); k++ {
+				if series.Books[i].Chapters[j].Headings[k].Type == "Audio" {
+					log.Infof("正在檢查音檔標題：%v: %v", series.Books[i].Chapters[j].Filename, strings.TrimSpace(series.Books[i].Chapters[j].Headings[k].Name))
+
+					if doesFileExist("./out/assets/mp3/原文/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+						log.Info("找到原文音檔!")
+					} else {
+						log.Errorf("無法找到原文音檔: %v", "./out/assets/mp3/原文/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+					}
+
+					if doesFileExist("./out/assets/mp3/上下層科判/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+						log.Info("找到上下層科判音檔!")
+					} else {
+						log.Errorf("無法找到上下層科判音檔: %v", "./out/assets/mp3/上下層科判/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+					}
+
+					if doesFileExist("./out/assets/mp3/各科範圍/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+						log.Info("找到各科範圍音檔!")
+					} else {
+						log.Errorf("無法找到各科範圍音檔: %v", "./out/assets/mp3/各科範圍/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+					}
+
+					if doesFileExist("./out/assets/mp3/師父音檔/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+						log.Info("找到師父音檔!")
+					} else {
+						log.Errorf("無法找到師父音檔: %v", "./out/assets/mp3/師父音檔/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+					}
+				}
+
+				if series.Books[i].Chapters[j].Headings[k].Type == "Link" {
+					log.Infof("正在檢查連結標題：%v", strings.TrimSpace(series.Books[i].Chapters[j].Headings[k].Name))
+
+					if doesFileExist("./out/" + series.Books[i].Chapters[j].Headings[k].Url + ".html") {
+						log.Infof("找到連結: %v", series.Books[i].Chapters[j].Headings[k].Url+".html")
+					} else {
+						log.Errorf("無法找到連結: %v", series.Books[i].Chapters[j].Headings[k].Url+".html")
+					}
+				}
+			}
+
+		}
+	}
+
 }
 
 func saveToFile(filename string, content string) {
@@ -100,7 +180,7 @@ func saveToFile(filename string, content string) {
 	}
 	defer file.Close()
 	file.WriteString(content)
-	log.Infof("%v written to disk", filename)
+	log.Infof("輸出%v", filename)
 }
 
 func copyFile(src, dst string) (int64, error) {
@@ -122,4 +202,12 @@ func copyFile(src, dst string) (int64, error) {
 	}
 
 	return nBytes, nil
+}
+
+func doesFileExist(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	} else {
+		return false
+	}
 }
