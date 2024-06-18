@@ -105,10 +105,10 @@ func main() {
 		for j := 0; j < len(series.Books[i].Chapters); j++ {
 			log.Infof("正在檢查%v", series.Books[i].Chapters[j].Filename)
 
-			if doesFileExist("./out/assets/mp3/原文/" + series.Books[i].Chapters[j].RangeAudioUrl + ".mp3") {
+			if doesFileExist("./out/assets/mp3/本表範圍/" + series.Books[i].Chapters[j].RangeAudioUrl + ".mp3") {
 				log.Info("找到本表範圍音檔!")
 			} else {
-				log.Errorf("無法找到本表範圍音檔: %v", "./out/assets/mp3/原文/"+series.Books[i].Chapters[j].RangeAudioUrl+".mp3")
+				log.Errorf("無法找到本表範圍音檔: %v", "./out/assets/mp3/本表範圍/"+series.Books[i].Chapters[j].RangeAudioUrl+".mp3")
 			}
 
 			if series.Books[i].Chapters[j].Prev != "" {
