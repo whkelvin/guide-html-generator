@@ -83,7 +83,9 @@ func main() {
 		saveToFile(filename, bookTmplOut)
 	}
 	booksTemplateInput := BooksTOCTemplateInput{
-		BookNames: bookNames}
+		BookNames: bookNames,
+		BasePath:  "./assets/mp3/",
+	}
 	booksTmplOut := GenerateBooksTOC(booksTemplateInput)
 	saveToFile("index.html", booksTmplOut)
 

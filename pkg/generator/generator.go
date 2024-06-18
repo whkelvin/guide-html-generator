@@ -11,6 +11,7 @@ import (
 
 type BooksTOCTemplateInput struct {
 	BookNames []string
+	BasePath  string
 }
 
 func GenerateBooksTOC(input BooksTOCTemplateInput) string {
