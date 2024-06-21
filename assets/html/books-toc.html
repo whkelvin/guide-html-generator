@@ -5,27 +5,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>目錄</title>
+  <title>菩提道次第廣論四家合註科判有聲書</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="./wh-audio.js" type="module"></script>
+  <script src="./wh-intro-audio.js" type="module"></script>
+  <script src="./wh-tutorial-audio.js" type="module"></script>
 </head>
 
 <body>
-  <h1 class="my-2 font-bold">菩提道次第廣論四家合註科判有聲書</h1>
+  <h1 class="m-2 font-bold text-xl">菩提道次第廣論四家合註科判有聲書</h1>
 
-  <div class="flex flex-row my-4 items-center">
-    <h1>簡介</h1>
-    <wh-audio class="m-2" src="{{.BasePath}}簡介.mp3"></wh-audio>
-  </div>
-
-  <div class="flex flex-row my-4 items-center">
-    <h1>操作方式</h1>
-    <wh-audio class="m-2" src="{{.BasePath}}操作方式.mp3"></wh-audio>
+  <div class="my-4 items-center">
+    <wh-intro-audio class="m-2" src="{{.BasePath}}簡介.mp3"></wh-intro-audio>
+    <wh-tutorial-audio class="m-2" src="{{.BasePath}}操作方式.mp3"></wh-tutorial-audio>
   </div>
 
   <div class="flex flex-col">
     {{range $index, $element := .BookNames}}
-    <div class="my-2">
+    <div class="m-2">
       <a class="underline" href="{{$element}}.html">第{{inc $index}}冊</a>
     </div>
     {{end}}

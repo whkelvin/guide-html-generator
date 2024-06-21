@@ -33,6 +33,20 @@ func main() {
 		panic(err.Error())
 	}
 
+	src = "./assets/html/wh-intro-audio.js"
+	dst = "./out/wh-intro-audio.js"
+	_, err = copyFile(src, dst)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	src = "./assets/html/wh-tutorial-audio.js"
+	dst = "./out/wh-tutorial-audio.js"
+	_, err = copyFile(src, dst)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	series := parser.ParseFolder("./assets/input")
 	bookNames := []string{}
 	for i := 0; i < len(series.Books); i++ {
