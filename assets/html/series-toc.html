@@ -13,17 +13,17 @@
 <body>
   <h1 class="m-2 font-bold text-xl">菩提道次第廣論四家合註科判有聲書</h1>
 
-  <div class="my-4 items-center">
-    <wh-text-audio src="{{.BasePath}}簡介.mp3" title="簡介" />
-    <wh-text-audio src="{{.BasePath}}操作方式.mp3" title="操作方式" />
+  <div class="m-2 items-center">
+    <wh-text-audio src="{{.BasePath}}/簡介.mp3" title="簡介"></wh-text-audio>
+    <wh-text-audio src="{{.BasePath}}/操作方式.mp3" title="操作方式"></wh-text-audio>
   </div>
 
   <div class="flex flex-col">
-    {{range $index, $element := .BookNames}}
+    {{range $element := .TOC}} {{if eq $element.Type "Link" -}}
     <div class="m-2">
-      <a class="underline" href="{{$element}}.html">第{{inc $index}}冊</a>
+      <a class="underline" href="{{$element.Url}}.html">{{$element.Title}}</a>
     </div>
-    {{end}}
+    {{end}} {{end}}
   </div>
 </body>
 

@@ -2,15 +2,19 @@ package main
 
 import (
 	"fmt"
-	"github.com/charmbracelet/log"
 	. "html_generator/pkg/generator"
 	"html_generator/pkg/parser"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
+
+	"github.com/charmbracelet/log"
 )
 
 func main() {
+	inputFolderPath := "./assets/input"
+	mp3FolderPath := "./assets/mp3"
 	src := "./assets/html/wh-audio.js"
 	dst := "./out/wh-audio.js"
 	_, err := copyFile(src, dst)
@@ -25,146 +29,227 @@ func main() {
 		panic(err.Error())
 	}
 
-	series := parser.ParseFolder("./assets/input")
-	bookNames := []string{}
-	for i := 0; i < len(series.Books); i++ {
-		bookNames = append(bookNames, series.Books[i].Name)
-		for j := 0; j < len(series.Books[i].Chapters); j++ {
+	seriesToc := parser.GetTOCFromCsv(inputFolderPath + "/index.csv")
+	log.Info("找到index.csv...")
+	tocItems := []TOCItem{}
+	for i := 0; i < len(seriesToc.TOCItems); i++ {
+		tocItems = append(tocItems, TOCItem{
+			Title: seriesToc.TOCItems[i].Title,
+			Type:  seriesToc.TOCItems[i].Type,
+			Url:   seriesToc.TOCItems[i].Url,
+		})
+	}
+	seriesTmplInput := SeriesTOCTemplateInput{
+		BasePath: mp3FolderPath,
+		TOC:      tocItems,
+	}
+	log.Info("建立根目錄頁...")
+	out := GenerateSeriesTOC(seriesTmplInput)
+	saveToFile("index.html", out)
+
+	bookFolders := getFolders(inputFolderPath)
+	for i := 0; i < len(bookFolders); i++ {
+		log.Infof("找到%s資料夾", bookFolders[i].Name())
+
+		tocFilePath := fmt.Sprintf(inputFolderPath+"/%s/index.csv", bookFolders[i].Name())
+		log.Infof("正在讀取%s目錄頁: %s ...", bookFolders[i].Name(), tocFilePath)
+		bookToc := *parser.GetTOCFromCsv(tocFilePath)
+
+		items := []TOCItem{}
+		for n := 0; n < len(bookToc.TOCItems); n++ {
+			items = append(items, TOCItem{
+				Title: bookToc.TOCItems[n].Title,
+				Type:  bookToc.TOCItems[n].Type,
+				Url:   bookToc.TOCItems[n].Url,
+			})
+		}
+
+		bookTemplateInput := BookTOCTemplateInput{
+			Items:    items,
+			BookName: bookFolders[i].Name(),
+			BasePath: mp3FolderPath,
+		}
+		log.Infof("建立%s目錄頁...", bookFolders[i].Name())
+		bookTmplOut := GenerateBookTOC(bookTemplateInput)
+		filename := fmt.Sprintf("%s.html", bookFolders[i].Name())
+		saveToFile(filename, bookTmplOut)
+
+		bookFolderPath := fmt.Sprintf("%s/%s/", inputFolderPath, bookFolders[i].Name())
+		log.Infof("正在讀取%s內容: %s...", bookFolders[i].Name(), bookFolderPath)
+		csvs := getFilesExceptForIndexDotCsv(bookFolderPath)
+
+		for j := 0; j < len(csvs); j++ {
+			csvPath := bookFolderPath + csvs[j].Name()
+			log.Infof("正在讀取%s內容: %s...", bookFolders[i].Name(), csvPath)
+			chapters := parser.GetChapterFromCsv(csvPath)
 			headings := []Heading{}
-			for k := 0; k < len(series.Books[i].Chapters[j].Headings); k++ {
+			for h := 0; h < len(chapters.Headings); h++ {
 				headings = append(headings, Heading{
-					Name:        series.Books[i].Chapters[j].Headings[k].Name,
-					Type:        series.Books[i].Chapters[j].Headings[k].Type,
-					Url:         series.Books[i].Chapters[j].Headings[k].Url,
-					LinkBtnText: series.Books[i].Chapters[j].Headings[k].BtnName,
+					Name: chapters.Headings[h].Name,
+					Type: chapters.Headings[h].Type,
+					Url:  chapters.Headings[h].Url,
 				})
 			}
 
-			booknames := []string{}
-			for n := 0; n < series.Books[i].Chapters[j].TotalBookCount; n++ {
-				booknames = append(booknames, fmt.Sprintf("冊%v目錄", n+1))
-			}
 			contentTmplInput := ContentTemplateInput{
-				BasePath:      "./assets/mp3/",
+				BasePath:      mp3FolderPath + "/",
 				Headings:      headings,
-				Next:          series.Books[i].Chapters[j].Next,
-				Prev:          series.Books[i].Chapters[j].Prev,
-				Title:         series.Books[i].Chapters[j].Title,
-				RangeAudioUrl: series.Books[i].Chapters[j].RangeAudioUrl,
-				BookNames:     booknames,
-				BookNumber:    i + 1,
+				Next:          chapters.Next,
+				Prev:          chapters.Prev,
+				Title:         chapters.Title,
+				RangeAudioUrl: chapters.RangeAudioUrl,
+				TOCUrl:        bookFolders[i].Name() + ".html",
 			}
 			contentTmplOut := GenerateContent(contentTmplInput)
-			filename := fmt.Sprintf("%v.html", series.Books[i].Chapters[j].Filename)
+			csvFilenameWithoutSuffix := RemoveSuffix(csvs[j].Name(), ".csv")
+			filename := fmt.Sprintf("%s%s.html", bookFolders[i].Name(), csvFilenameWithoutSuffix)
 			saveToFile(filename, contentTmplOut)
 		}
-		items := []TOCItem{}
-		for n := 0; n < len(series.Books[i].TOC.TOCItems); n++ {
-			items = append(items, TOCItem{
-				Title: series.Books[i].TOC.TOCItems[n].Title,
-				Type:  series.Books[i].TOC.TOCItems[n].Type,
-				Url:   series.Books[i].TOC.TOCItems[n].Url,
-			})
-		}
-		bookTemplateInput := BookTOCTemplateInput{
-			Items:      items,
-			BookNumber: i + 1,
-			BasePath:   "./assets/mp3/",
-		}
-		bookTmplOut := GenerateBookTOC(bookTemplateInput)
-		filename := fmt.Sprintf("冊%v.html", i+1)
-		saveToFile(filename, bookTmplOut)
 	}
-	booksTemplateInput := BooksTOCTemplateInput{
-		BookNames: bookNames,
-		BasePath:  "./assets/mp3/",
+
+	log.Infof("網頁輸出完成")
+	checkGeneratedSite(inputFolderPath, mp3FolderPath)
+
+}
+
+func checkGeneratedSite(inputFolderPath string, mp3FolderPath string) {
+	log.Infof("正在檢查輸出網頁...")
+	log.Infof("正在檢查根目錄...")
+	if doesFileExist("./out/assets/mp3/操作方式.mp3") == false {
+		log.Error("無法找到 ./out/assets/mp3/操作方式.mp3")
+	} else {
+		log.Info("找到./out/assets/mp3/操作方式.mp3!")
 	}
-	booksTmplOut := GenerateBooksTOC(booksTemplateInput)
-	saveToFile("index.html", booksTmplOut)
 
-	log.Infof("正在檢查輸出網頁")
+	if doesFileExist("./out/assets/mp3/簡介.mp3") == false {
+		log.Error("無法找到 ./out/assets/mp3/簡介.mp3")
+	} else {
+		log.Info("找到./out/assets/mp3/簡介.mp3!")
+	}
 
-	for i := 0; i < len(series.Books); i++ {
-		log.Infof("正在檢查冊%v...", i+1)
+	seriesToc := parser.GetTOCFromCsv(inputFolderPath + "/index.csv")
+	tocItems := []TOCItem{}
+	for i := 0; i < len(seriesToc.TOCItems); i++ {
+		tocItems = append(tocItems, TOCItem{
+			Title: seriesToc.TOCItems[i].Title,
+			Type:  seriesToc.TOCItems[i].Type,
+			Url:   seriesToc.TOCItems[i].Url,
+		})
 
-		log.Infof("正在檢查冊%v目錄", i+1)
-		for n := 0; n < len(series.Books[i].TOC.TOCItems); n++ {
-			if series.Books[i].TOC.TOCItems[n].Type == "Link" {
-				if doesFileExist("./out/" + series.Books[i].TOC.TOCItems[n].Url + ".html") {
-					log.Infof("找到目錄標題連結: %v | %v", series.Books[i].TOC.TOCItems[n].Title, "./out/"+series.Books[i].TOC.TOCItems[n].Url+".html")
+		log.Infof("正在檢查根目錄連結: %s", seriesToc.TOCItems[i].Title)
+		if seriesToc.TOCItems[i].Type != "Link" {
+			log.Errorf("根目錄標題只支援Link")
+		}
+
+		if doesFileExist("./out/"+seriesToc.TOCItems[i].Url+".html") == false {
+			log.Errorf("無法找到: %s", "./out/"+seriesToc.TOCItems[i].Url+".html")
+		} else {
+			log.Infof("找到%s", "./out/"+seriesToc.TOCItems[i].Url+".html!")
+		}
+	}
+
+	bookFolders := getFolders(inputFolderPath)
+	for i := 0; i < len(bookFolders); i++ {
+		log.Infof("正在檢查%s", bookFolders[i].Name())
+
+		tocFilePath := fmt.Sprintf(inputFolderPath+"/%s/index.csv", bookFolders[i].Name())
+		log.Infof("正在檢查%s目錄頁: %s ...", bookFolders[i].Name(), tocFilePath)
+		bookToc := *parser.GetTOCFromCsv(tocFilePath)
+
+		for n := 0; n < len(bookToc.TOCItems); n++ {
+			if bookToc.TOCItems[n].Type == "Link" {
+				if doesFileExist("./out/" + bookToc.TOCItems[n].Url + ".html") {
+					log.Infof("找到標題連結: %s | %s | %s", bookFolders[i].Name(), bookToc.TOCItems[n].Title, "./out/"+bookToc.TOCItems[n].Url+".html")
 				} else {
-					log.Errorf("無法找到目錄標題連結: %v | %v", series.Books[i].TOC.TOCItems[n].Title, "./out/"+series.Books[i].TOC.TOCItems[n].Url+".html")
+					log.Errorf("無法找到標題連結: %s | %s | %s", bookFolders[i].Name(), bookToc.TOCItems[n].Title, "./out/"+bookToc.TOCItems[n].Url+".html")
 				}
 			}
 		}
-		for j := 0; j < len(series.Books[i].Chapters); j++ {
-			log.Infof("正在檢查%v", series.Books[i].Chapters[j].Filename)
 
-			if doesFileExist("./out/assets/mp3/本表範圍/" + series.Books[i].Chapters[j].RangeAudioUrl + ".mp3") {
+		bookFolderPath := fmt.Sprintf("%s/%s/", inputFolderPath, bookFolders[i].Name())
+		log.Infof("正在檢查%s內容: %s...", bookFolders[i].Name(), bookFolderPath)
+		csvs := getFilesExceptForIndexDotCsv(bookFolderPath)
+
+		for j := 0; j < len(csvs); j++ {
+			csvPath := bookFolderPath + csvs[j].Name()
+			log.Infof("正在檢查%s內容: %s...", bookFolders[i].Name(), csvPath)
+
+			chapter := parser.GetChapterFromCsv(csvPath)
+
+			log.Infof("正在檢查本表範圍音檔: %s", csvPath)
+			if doesFileExist("./out/assets/mp3/本表範圍/" + chapter.RangeAudioUrl + ".mp3") {
 				log.Info("找到本表範圍音檔!")
 			} else {
-				log.Errorf("無法找到本表範圍音檔: %v", "./out/assets/mp3/本表範圍/"+series.Books[i].Chapters[j].RangeAudioUrl+".mp3")
+				log.Errorf("無法找到本表範圍音檔: %s", "./out/assets/mp3/本表範圍/"+chapter.RangeAudioUrl+".mp3")
 			}
 
-			if series.Books[i].Chapters[j].Prev != "" {
-				if doesFileExist("./out/" + series.Books[i].Chapters[j].Prev + ".html") {
+			log.Infof("正在檢查上一表,下一表,及本冊目錄連結: %s", csvPath)
+			if chapter.Prev != "" {
+				if doesFileExist("./out/" + chapter.Prev + ".html") {
 					log.Info("找到上一表!")
 				} else {
-					log.Errorf("無法找到上一表: %v", "./out/"+series.Books[i].Chapters[j].Prev+".html")
+					log.Errorf("無法找到上一表: %s", "./out/"+chapter.Prev+".html")
 				}
 			}
 
-			if series.Books[i].Chapters[j].Next != "" {
-				if doesFileExist("./out/" + series.Books[i].Chapters[j].Next + ".html") {
+			if chapter.Next != "" {
+				if doesFileExist("./out/" + chapter.Next + ".html") {
 					log.Info("找到下一表!")
 				} else {
-					log.Errorf("無法找到下一表: %v", "./out/"+series.Books[i].Chapters[j].Next+".html")
+					log.Errorf("無法找到下一表: %s", "./out/"+chapter.Next+".html")
 				}
 			}
 
-			for k := 0; k < len(series.Books[i].Chapters[j].Headings); k++ {
-				if series.Books[i].Chapters[j].Headings[k].Type == "Audio" {
-					log.Infof("正在檢查音檔標題：%v: %v", series.Books[i].Chapters[j].Filename, strings.TrimSpace(series.Books[i].Chapters[j].Headings[k].Name))
+			if doesFileExist("./out/" + bookFolders[i].Name() + ".html") {
+				log.Infof("找到本冊目錄連結%s!", "./out/"+bookFolders[i].Name()+".html")
+			} else {
+				log.Errorf("無法找到本冊目錄連結: %s", "./out/"+bookFolders[i].Name()+".html")
+			}
 
-					if doesFileExist("./out/assets/mp3/原文/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+			log.Infof("正在檢查標題: %s", csvPath)
+			for h := 0; h < len(chapter.Headings); h++ {
+
+				if chapter.Headings[h].Type == "Audio" {
+					log.Infof("正在檢查音檔標題: %s", strings.TrimSpace(chapter.Headings[h].Name))
+
+					if doesFileExist("./out/assets/mp3/原文/" + chapter.Headings[h].Url + ".mp3") {
 						log.Info("找到原文音檔!")
 					} else {
-						log.Errorf("無法找到原文音檔: %v", "./out/assets/mp3/原文/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+						log.Errorf("無法找到原文音檔: %s", "./out/assets/mp3/原文/"+chapter.Headings[h].Url+".mp3")
 					}
 
-					if doesFileExist("./out/assets/mp3/上下層科判/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+					if doesFileExist("./out/assets/mp3/上下層科判/" + chapter.Headings[h].Url + ".mp3") {
 						log.Info("找到上下層科判音檔!")
 					} else {
-						log.Errorf("無法找到上下層科判音檔: %v", "./out/assets/mp3/上下層科判/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+						log.Errorf("無法找到上下層科判音檔: %s", "./out/assets/mp3/上下層科判/"+chapter.Headings[h].Url+".mp3")
 					}
 
-					if doesFileExist("./out/assets/mp3/各科範圍/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+					if doesFileExist("./out/assets/mp3/各科範圍/" + chapter.Headings[h].Url + ".mp3") {
 						log.Info("找到各科範圍音檔!")
 					} else {
-						log.Errorf("無法找到各科範圍音檔: %v", "./out/assets/mp3/各科範圍/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+						log.Errorf("無法找到各科範圍音檔: %s", "./out/assets/mp3/各科範圍/"+chapter.Headings[h].Url+".mp3")
 					}
 
-					if doesFileExist("./out/assets/mp3/師父音檔/" + series.Books[i].Chapters[j].Headings[k].Url + ".mp3") {
+					if doesFileExist("./out/assets/mp3/師父音檔/" + chapter.Headings[h].Url + ".mp3") {
 						log.Info("找到師父音檔!")
 					} else {
-						log.Errorf("無法找到師父音檔: %v", "./out/assets/mp3/師父音檔/"+series.Books[i].Chapters[j].Headings[k].Url+".mp3")
+						log.Errorf("無法找到師父音檔: %s", "./out/assets/mp3/師父音檔/"+chapter.Headings[h].Url+".mp3")
 					}
 				}
 
-				if series.Books[i].Chapters[j].Headings[k].Type == "Link" {
-					log.Infof("正在檢查連結標題：%v", strings.TrimSpace(series.Books[i].Chapters[j].Headings[k].Name))
-
-					if doesFileExist("./out/" + series.Books[i].Chapters[j].Headings[k].Url + ".html") {
-						log.Infof("找到連結: %v", series.Books[i].Chapters[j].Headings[k].Url+".html")
+				if chapter.Headings[h].Type == "Link" {
+					log.Infof("正在檢查連結標題：%s", strings.TrimSpace(chapter.Headings[h].Name))
+					if doesFileExist("./out/" + chapter.Headings[h].Url + ".html") {
+						log.Infof("找到連結: %s", chapter.Headings[h].Url+".html")
 					} else {
-						log.Errorf("無法找到連結: %v", series.Books[i].Chapters[j].Headings[k].Url+".html")
+						log.Errorf("無法找到連結: %s", chapter.Headings[h].Url+".html")
 					}
 				}
+
 			}
 
 		}
 	}
-
 }
 
 func saveToFile(filename string, content string) {
@@ -175,7 +260,7 @@ func saveToFile(filename string, content string) {
 	}
 	defer file.Close()
 	file.WriteString(content)
-	log.Infof("輸出%v", filename)
+	log.Infof("輸出%s", filename)
 }
 
 func copyFile(src, dst string) (int64, error) {
@@ -205,4 +290,58 @@ func doesFileExist(path string) bool {
 	} else {
 		return false
 	}
+}
+
+func countFolders(folderPath string) int {
+	d, e := os.ReadDir(folderPath)
+	if e != nil {
+		return 0
+	}
+	count := 0
+	for i := 0; i < len(d); i++ {
+		if d[i].IsDir() {
+			count++
+		}
+	}
+
+	return count
+}
+
+func getFolders(path string) []fs.DirEntry {
+	d, e := os.ReadDir(path)
+	out := []fs.DirEntry{}
+	if e != nil {
+		return out
+	}
+
+	for i := 0; i < len(d); i++ {
+		if d[i].IsDir() {
+			out = append(out, d[i])
+		}
+	}
+
+	return out
+}
+
+func getFilesExceptForIndexDotCsv(path string) []fs.DirEntry {
+	d, e := os.ReadDir(path)
+	out := []fs.DirEntry{}
+	if e != nil {
+		return out
+	}
+
+	for i := 0; i < len(d); i++ {
+		if d[i].Name() != "index.csv" {
+			out = append(out, d[i])
+		}
+	}
+
+	return out
+}
+
+func RemoveSuffix(s, suffix string) string {
+	if strings.HasSuffix(s, suffix) {
+		return s[:len(s)-len(suffix)]
+	}
+	return s
 }

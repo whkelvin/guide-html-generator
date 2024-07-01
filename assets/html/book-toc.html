@@ -5,13 +5,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>第{{.BookNumber}}冊目錄</title>
+  <title>{{.BookName}}目錄</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="./wh-text-audio.js" type="module"></script>
 </head>
 
 <body>
-  <h1 class="m-2">第{{.BookNumber}}冊目錄</h1>
+  <h1 class="m-2">{{.BookName}}目錄</h1>
   <a class="m-2 underline" href="index.html">回首頁</a>
 
   <div class="flex flex-col">

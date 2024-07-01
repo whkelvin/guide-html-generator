@@ -48,13 +48,7 @@
   <a class="mr-4" href="{{.Prev}}.html">上一表</a>
   {{- end }}
 
-  <a class="mr-4" href="冊{{.BookNumber}}.html">回本冊目錄</a>
-
-  <!--
-  {{range $index, $name := .BookNames}}
-    <a class="mr-4" href="冊{{inc $index}}.html">{{$name}}</a>
-  {{end}}
-  -->
+  <a class="mr-4" href="{{.TOCUrl}}">回本冊目錄</a>
 
   {{if ne .Next "" -}}
   <a class="mr-4" href="{{.Next}}.html">下一表</a>

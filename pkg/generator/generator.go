@@ -9,25 +9,18 @@ import (
 	"text/template"
 )
 
-type BooksTOCTemplateInput struct {
-	BookNames []string
-	BasePath  string
+type SeriesTOCTemplateInput struct {
+	BasePath string
+	TOC      []TOCItem
 }
 
-func GenerateBooksTOC(input BooksTOCTemplateInput) string {
-	txt, err := os.ReadFile("assets/html/books-toc.html")
+func GenerateSeriesTOC(input SeriesTOCTemplateInput) string {
+	txt, err := os.ReadFile("assets/html/series-toc.html")
 	if err != nil {
 		panic(err.Error())
 	}
 
-	funcMap := template.FuncMap{
-		// The name "inc" is what the function will be called in the template text.
-		"inc": func(i int) int {
-			return i + 1
-		},
-	}
-
-	tmpl, err := template.New("BooksTOC").Funcs(funcMap).Parse(string(txt))
+	tmpl, err := template.New("SeriesTOC").Parse(string(txt))
 	if err != nil {
 		panic(err.Error())
 	}
@@ -53,9 +46,9 @@ type TOCItem struct {
 }
 
 type BookTOCTemplateInput struct {
-	Items      []TOCItem
-	BookNumber int
-	BasePath   string
+	Items    []TOCItem
+	BookName string
+	BasePath string
 }
 
 func GenerateBookTOC(input BookTOCTemplateInput) string {
@@ -92,8 +85,7 @@ type ContentTemplateInput struct {
 	Prev          string
 	Title         string
 	BasePath      string
-	BookNames     []string
-	BookNumber    int
+	TOCUrl        string
 }
 
 func GenerateContent(input ContentTemplateInput) string {
