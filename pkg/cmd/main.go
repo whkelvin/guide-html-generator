@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/log"
 	. "html_generator/pkg/generator"
 	"html_generator/pkg/parser"
 	"io"
 	"os"
 	"strings"
-
-	"github.com/charmbracelet/log"
 )
 
 func main() {
@@ -19,29 +18,8 @@ func main() {
 		panic(err.Error())
 	}
 
-	src = "./assets/html/wh-raw-audio.js"
-	dst = "./out/wh-raw-audio.js"
-	_, err = copyFile(src, dst)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	src = "./assets/html/wh-range-audio.js"
-	dst = "./out/wh-range-audio.js"
-	_, err = copyFile(src, dst)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	src = "./assets/html/wh-intro-audio.js"
-	dst = "./out/wh-intro-audio.js"
-	_, err = copyFile(src, dst)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	src = "./assets/html/wh-tutorial-audio.js"
-	dst = "./out/wh-tutorial-audio.js"
+	src = "./assets/html/wh-text-audio.js"
+	dst = "./out/wh-text-audio.js"
 	_, err = copyFile(src, dst)
 	if err != nil {
 		panic(err.Error())
@@ -91,6 +69,7 @@ func main() {
 		bookTemplateInput := BookTOCTemplateInput{
 			Items:      items,
 			BookNumber: i + 1,
+			BasePath:   "./assets/mp3/",
 		}
 		bookTmplOut := GenerateBookTOC(bookTemplateInput)
 		filename := fmt.Sprintf("冊%v.html", i+1)

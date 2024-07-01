@@ -1,9 +1,11 @@
-class WHRangeAudioElement extends HTMLElement {
-  static observedAttributes = ["src", "id"];
+class WHTextAudioElement extends HTMLElement {
+  static observedAttributes = ["src", "id", "title"];
+
   constructor() {
     super();
     this.btnStatus = "Pause";
     const shadowRoot = this.attachShadow({ mode: "closed" });
+
     this.audio = document.createElement("audio");
     this.audio.onended = () => {
       this.audioEnded();
@@ -12,12 +14,14 @@ class WHRangeAudioElement extends HTMLElement {
       this.audio.setAttribute("src", "./assets/mp3/default.mp3");
       this.audio.load();
     };
+
     this.btn = document.createElement("button");
-    this.btn.textContent = "播放範圍";
+
+    this.btn.textContent = "播放" + this.title ?? "";
     this.btn.onclick = () => {
       if (this.btnStatus == "Play") {
         this.btnStatus = "Pause";
-        this.btn.textContent = "播放範圍";
+        this.btn.textContent = "播放" + this.title ?? "";
         this.audio.pause();
       } else {
         this.btnStatus = "Play";
@@ -31,20 +35,26 @@ class WHRangeAudioElement extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    console.log(
-      `Attribute ${name} has changed from ${oldValue} to ${newValue}.`
-    );
-    this.audio.setAttribute("src", newValue);
-    this.audio.load();
-    this.btnStatus = "Pause";
-    this.btn.textContent = "播放範圍";
+    if (name === "src") {
+      console.log(
+        `Attribute ${name} has changed from ${oldValue} to ${newValue}.`
+      );
+      this.audio.setAttribute("src", newValue);
+      this.audio.load();
+      this.btnStatus = "Pause";
+      this.btn.textContent = "播放" + this.title ?? "";
+    }
+
+    if (name === "title") {
+      this.title = newValue;
+    }
   }
 
   audioEnded() {
     this.audio.load();
     this.btnStatus = "Pause";
-    this.btn.textContent = "播放範圍";
+    this.btn.textContent = "播放" + this.title;
   }
 }
 
-customElements.define("wh-range-audio", WHRangeAudioElement);
+customElements.define("wh-text-audio", WHTextAudioElement);

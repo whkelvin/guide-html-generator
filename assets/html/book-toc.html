@@ -7,6 +7,7 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>第{{.BookNumber}}冊目錄</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./wh-text-audio.js" type="module"></script>
 </head>
 
 <body>
@@ -16,8 +17,10 @@
   <div class="flex flex-col">
     {{range $element := .Items}} {{if eq $element.Type "Text" -}}
     <h1 class="m-2 font-bold">{{$element.Title}}</h1>
-    {{else}}
+    {{end}} {{if eq $element.Type "Link" -}}
     <a class="m-2 underline" href="{{$element.Url}}.html">{{ $element.Title }}</a>
+    {{end}} {{if eq $element.Type "Audio" -}}
+    <wh-text-audio class="m-2" src="{{$.BasePath}}/{{$element.Url}}.mp3" title="{{ $element.Title }}"></wh-text-audio>
     {{end}} {{end}}
   </div>
 </body>

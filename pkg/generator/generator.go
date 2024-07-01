@@ -55,6 +55,7 @@ type TOCItem struct {
 type BookTOCTemplateInput struct {
 	Items      []TOCItem
 	BookNumber int
+	BasePath   string
 }
 
 func GenerateBookTOC(input BookTOCTemplateInput) string {

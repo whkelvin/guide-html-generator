@@ -7,16 +7,15 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>菩提道次第廣論四家合註科判有聲書</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="./wh-intro-audio.js" type="module"></script>
-  <script src="./wh-tutorial-audio.js" type="module"></script>
+  <script src="./wh-text-audio.js" type="module"></script>
 </head>
 
 <body>
   <h1 class="m-2 font-bold text-xl">菩提道次第廣論四家合註科判有聲書</h1>
 
   <div class="my-4 items-center">
-    <wh-intro-audio class="m-2" src="{{.BasePath}}簡介.mp3"></wh-intro-audio>
-    <wh-tutorial-audio class="m-2" src="{{.BasePath}}操作方式.mp3"></wh-tutorial-audio>
+    <wh-text-audio src="{{.BasePath}}簡介.mp3" title="簡介" />
+    <wh-text-audio src="{{.BasePath}}操作方式.mp3" title="操作方式" />
   </div>
 
   <div class="flex flex-col">
