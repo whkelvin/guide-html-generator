@@ -85,9 +85,10 @@ func main() {
 			headings := []Heading{}
 			for h := 0; h < len(chapters.Headings); h++ {
 				headings = append(headings, Heading{
-					Name: chapters.Headings[h].Name,
-					Type: chapters.Headings[h].Type,
-					Url:  chapters.Headings[h].Url,
+					Name:        chapters.Headings[h].Name,
+					Type:        chapters.Headings[h].Type,
+					Url:         chapters.Headings[h].Url,
+					LinkBtnText: chapters.Headings[h].BtnName,
 				})
 			}
 
