@@ -332,7 +332,7 @@ func getFilesExceptForIndexDotCsv(path string) []fs.DirEntry {
 	}
 
 	for i := 0; i < len(d); i++ {
-		if d[i].Name() != "index.csv" {
+		if d[i].Name() != "index.csv" && strings.HasSuffix(d[i].Name(), ".csv") {
 			out = append(out, d[i])
 		}
 	}
