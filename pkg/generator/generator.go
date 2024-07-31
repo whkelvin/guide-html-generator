@@ -86,6 +86,7 @@ type ContentTemplateInput struct {
 	Title         string
 	BasePath      string
 	TOCUrl        string
+	BookNum       int
 }
 
 func GenerateContent(input ContentTemplateInput) string {

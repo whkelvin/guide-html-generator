@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -92,6 +93,12 @@ func main() {
 				})
 			}
 
+			bookNumStr := RemovePrefix(bookFolders[i].Name(), "冊")
+			bookNum, err := strconv.Atoi(bookNumStr)
+			if err != nil {
+				bookNum = 0
+			}
+
 			contentTmplInput := ContentTemplateInput{
 				BasePath:      mp3FolderPath + "/",
 				Headings:      headings,
@@ -100,6 +107,7 @@ func main() {
 				Title:         chapters.Title,
 				RangeAudioUrl: chapters.RangeAudioUrl,
 				TOCUrl:        bookFolders[i].Name() + ".html",
+				BookNum:       bookNum,
 			}
 			contentTmplOut := GenerateContent(contentTmplInput)
 			csvFilenameWithoutSuffix := RemoveSuffix(csvs[j].Name(), ".csv")
@@ -343,6 +351,13 @@ func getFilesExceptForIndexDotCsv(path string) []fs.DirEntry {
 func RemoveSuffix(s, suffix string) string {
 	if strings.HasSuffix(s, suffix) {
 		return s[:len(s)-len(suffix)]
+	}
+	return s
+}
+
+func RemovePrefix(s, prefix string) string {
+	if strings.HasPrefix(s, prefix) {
+		return s[len(prefix):len(s)]
 	}
 	return s
 }

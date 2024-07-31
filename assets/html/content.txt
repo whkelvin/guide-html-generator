@@ -77,7 +77,12 @@
   </div>
   <div class="my-6 py-6">
     <select onchange="changeAudioSelection()" class="min-w-64" name="alphabet" id="audio">
+    
+    {{if ge .BookNum 5 -}}
+      <option selected value="師父音檔">老師音檔</option>
+    {{else -}}
       <option selected value="師父音檔">師父音檔</option>
+    {{end}}
       <option value="四家合註語譯">四家合註語譯</option>
       <option value="上下層科判">上下層科判</option>
       <option value="各科範圍">各科範圍</option>
